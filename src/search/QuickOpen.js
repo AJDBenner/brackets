@@ -292,18 +292,16 @@ define(function (require, exports, module) {
         if (currentPlugin) {
             currentPlugin.itemSelect(selectedItem, query);
         } else {
-            // extract line number, if any
+            // Extract line/col number, if any
             var cursorPos = extractCursorPos(query);
 
             // Navigate to file and line number
             var fullPath = selectedItem && selectedItem.fullPath;
             if (fullPath) {
-                // This case is tricky. We want to switch editors, so we need to deal with
-                // resizing/rescrolling the current editor first. But we don't actually want
-                // to start the animation of the ModalBar until afterward (otherwise it glitches
-                // because it gets starved of cycles during the creation of the new editor). 
-                // So we call `prepareClose()` first, and finish the close later.
-                // FIXME: what about this case??
+                // We need to fix up the current editor's scroll pos before switching to the next one. But if
+                // we run the full close() now, ModalBar's animate-out won't be smooth (gets starved of cycles
+                // during creation of the new editor). So we call prepareClose() to do *only* the scroll pos
+                // fixup, and let the full close() be triggered later when the new editor takes focus.
                 doClose = false;
                 this.modalBar.prepareClose();
                 CommandManager.execute(Commands.CMD_ADD_TO_WORKINGSET_AND_OPEN, {fullPath: fullPath})
@@ -312,9 +310,6 @@ define(function (require, exports, module) {
                             var editor = EditorManager.getCurrentFullEditor();
                             editor.setCursorPos(cursorPos.line, cursorPos.ch, true);
                         }
-                    })
-                    .always(function () {
-                        self.close();
                     });
             } else if (cursorPos) {
                 EditorManager.getCurrentFullEditor().setCursorPos(cursorPos.line, cursorPos.ch, true);
@@ -338,13 +333,13 @@ define(function (require, exports, module) {
     };
 
     /**
-     * Make sure ModalBar doesn't restore the scroll pos in cases where we're doing our own restoring instead.
+     * Make sure ModalBar doesn't touch the scroll pos in cases where we're doing our own restoring instead.
      */
     QuickNavigateDialog.prototype._handleBeforeClose = function (reason) {
         console.log("QuickOpen._handleBeforeClose()", this.isOpen, this.closePromise, reason);
         if (reason === ModalBar.CLOSE_ESCAPE) {
-            // Don't actually restore scroll pos yet though: wait for _handleCloseBar() when the editor has
-            // been resized back to its original height, matching the state it was in when we saved the pos.
+            // Don't let ModalBar adjust scroll pos: we're going to revert it to its original pos. (In _handleCloseBar(),
+            // when the editor has been resized back to its original height, matching state when we saved the pos)
             return { restoreScrollPos: false };
         }
     };
@@ -378,13 +373,13 @@ define(function (require, exports, module) {
             }
         }
         
-        // Close popup & ensure we avoid any still-pending result promises
+        // Close popup & ensure we ignore any still-pending result promises
         this.searchField.destroy();
         
         // Restore original selection / scroll pos if closed via Escape
         if (reason === ModalBar.CLOSE_ESCAPE) {
             console.log("QO restoring pos");
-            // We reset the scroll position synchronously on the ModalBar "close" event (before the animation
+            // We can reset the scroll position synchronously on the ModalBar "close" event (before the animation
             // completes) since the editor has already been resized at this point.
             var editor = EditorManager.getCurrentFullEditor();
             if (this._origSelection) {
@@ -617,7 +612,7 @@ define(function (require, exports, module) {
         initialString = initialString || "";
         initialString = prefix + initialString;
         
-        this.searchField.setText(initialString, true);
+        this.searchField.setText(initialString);
         
         // Select just the text after the prefix
         this.$searchField[0].setSelectionRange(prefix.length, initialString.length);
@@ -680,11 +675,10 @@ define(function (require, exports, module) {
         $(this.modalBar).on("close", this._handleCloseBar);
         
         this.$searchField = $("input#quickOpenSearch");
-        this.$searchField.keyup(this._handleKeyUp);
         
         this.searchField = new QuickSearchField(this.$searchField, {
             maxResults: 20,
-            verticalAdjust: this.modalBar.getRoot().outerHeight(),  // FIXME: hide popup until animation done! (setExtraDropdownCSS()?)
+            verticalAdjust: this.modalBar.getRoot().outerHeight(),
             resultProvider: this._filterCallback,
             formatter: this._resultsFormatterCallback,
             onCommit: this._handleItemSelect,
