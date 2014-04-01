@@ -26,13 +26,8 @@
 /*unittests: QuickOpen*/
 
 /*
- * Displays an auto suggest pop-up list of files to allow the user to quickly navigate to a file and lines
- * within a file.
- * 
- * TODO (issue 333) - currently jquery smart auto complete is used for the pop-up list. While it mostly works
- * it has several issues, so it should be replace with an alternative. Issues:
- * - the pop-up position logic has flaws that require CSS workarounds
- * - the pop-up properties cannot be modified once the object is constructed
+ * Displays a search bar where the user can quickly navigate to a different file by searching file names in
+ * the project, and/or jump to a line number. Providers can plug in to offer additional search modes.
  */
 
 
@@ -336,7 +331,6 @@ define(function (require, exports, module) {
      * Make sure ModalBar doesn't touch the scroll pos in cases where we're doing our own restoring instead.
      */
     QuickNavigateDialog.prototype._handleBeforeClose = function (reason) {
-        console.log("QuickOpen._handleBeforeClose()", this.isOpen, this.closePromise, reason);
         if (reason === ModalBar.CLOSE_ESCAPE) {
             // Don't let ModalBar adjust scroll pos: we're going to revert it to its original pos. (In _handleCloseBar(),
             // when the editor has been resized back to its original height, matching state when we saved the pos)
@@ -360,7 +354,6 @@ define(function (require, exports, module) {
     };
     
     QuickNavigateDialog.prototype._handleCloseBar = function (event, reason, modalBarClosePromise) {
-        console.log("QuickOpen._handleCloseBar()", this.isOpen, this.closePromise, reason, modalBarClosePromise);
         console.assert(!this.closePromise);
         this.closePromise = modalBarClosePromise;
         this.isOpen = false;
@@ -378,7 +371,6 @@ define(function (require, exports, module) {
         
         // Restore original selection / scroll pos if closed via Escape
         if (reason === ModalBar.CLOSE_ESCAPE) {
-            console.log("QO restoring pos");
             // We can reset the scroll position synchronously on the ModalBar "close" event (before the animation
             // completes) since the editor has already been resized at this point.
             var editor = EditorManager.getCurrentFullEditor();
@@ -507,7 +499,6 @@ define(function (require, exports, module) {
         this._updateDialogLabel(null, query);
         
         // No matching plugin: use default file search mode
-        currentPlugin = null;
         return searchFileList(query, this._filenameMatcher);
     };
 
