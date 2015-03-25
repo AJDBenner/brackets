@@ -22,7 +22,7 @@
  */
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
-/*global define, $, window, setTimeout */
+/*global define, $ */
 /*unittests: QuickOpen*/
 
 /*
@@ -44,7 +44,6 @@ define(function (require, exports, module) {
         Commands            = require("command/Commands"),
         ProjectManager      = require("project/ProjectManager"),
         LanguageManager     = require("language/LanguageManager"),
-        KeyEvent            = require("utils/KeyEvent"),
         ModalBar            = require("widgets/ModalBar").ModalBar,
         QuickSearchField    = require("search/QuickSearchField").QuickSearchField,
         StringMatch         = require("utils/StringMatch");
@@ -100,11 +99,11 @@ define(function (require, exports, module) {
      * Creates and registers a new QuickOpenPlugin
      *
      * @param { name: string, 
-     *          languageIds: Array.<string>,
+     *          languageIds: !Array.<string>,
      *          done: ?function(),
-     *          search: function(string, !StringMatch.StringMatcher):Array.<SearchResult|string>,
+     *          search: function(string, !StringMatch.StringMatcher):(!Array.<SearchResult|string>|$.Promise),
      *          match: function(string):boolean,
-     *          itemFocus: ?function(?SearchResult|string, string),
+     *          itemFocus: ?function(?SearchResult|string, string, boolean),
      *          itemSelect: function(?SearchResult|string, string),
      *          resultsFormatter: ?function(SearchResult|string, string):string,
      *          matcherOptions: ?Object,
@@ -116,11 +115,13 @@ define(function (require, exports, module) {
      * name - plug-in name, **must be unique**
      * languageIds - language Ids array. Example: ["javascript", "css", "html"]. To allow any language, pass []. Required.
      * done - called when quick open is complete. Plug-in should clear its internal state. Optional.
-     * search - takes a query string and a StringMatcher (the use of which is optional but can speed up your searches) and returns an array of strings that match the query. Required.
+     * search - takes a query string and a StringMatcher (the use of which is optional but can speed up your searches) and returns
+     *      an array of strings or result objects that match the query; or a Promise that resolves to such an array. Required.
      * match - takes a query string and returns true if this plug-in wants to provide
      *      results for this query. Required.
      * itemFocus - performs an action when a result has been highlighted (via arrow keys, or by becoming top of the list).
-     *      Passed the highlighted search result item (as returned by search()), and the current query string. Optional.
+     *      Passed the highlighted search result item (as returned by search()), the current query string, and a flag that is true
+     *      if the item was highlighted explicitly (arrow keys), not implicitly (at top of list after last search()). Optional.
      * itemSelect - performs an action when a result is chosen.
      *      Passed the highlighted search result item (as returned by search()), and the current query string. Required.
      * resultsFormatter - takes a query string and an item string and returns 
@@ -275,7 +276,7 @@ define(function (require, exports, module) {
      * and closes the dialog.
      *
      * Note, if selectedItem is null quick search should inspect $searchField for text
-     * that may have not matched anything in in the list, but may have information
+     * that may have not matched anything in the list, but may have information
      * for carrying out an action (e.g. go to line).
      */
     QuickNavigateDialog.prototype._handleItemSelect = function (selectedItem, query) {
@@ -328,17 +329,6 @@ define(function (require, exports, module) {
     };
 
     /**
-     * Make sure ModalBar doesn't touch the scroll pos in cases where we're doing our own restoring instead.
-     */
-    QuickNavigateDialog.prototype._handleBeforeClose = function (reason) {
-        if (reason === ModalBar.CLOSE_ESCAPE) {
-            // Don't let ModalBar adjust scroll pos: we're going to revert it to its original pos. (In _handleCloseBar(),
-            // when the editor has been resized back to its original height, matching state when we saved the pos)
-            return { restoreScrollPos: false };
-        }
-    };
-
-    /**
      * Closes the search bar; if search bar is already closing, returns the Promise that is tracking the
      * existing close activity.
      * @return {$.Promise} Resolved when the search bar is entirely closed.
@@ -371,8 +361,9 @@ define(function (require, exports, module) {
         
         // Restore original selection / scroll pos if closed via Escape
         if (reason === ModalBar.CLOSE_ESCAPE) {
-            // We can reset the scroll position synchronously on the ModalBar "close" event (before the animation
-            // completes) since the editor has already been resized at this point.
+            // We can reset the scroll position synchronously on ModalBar's "close" event (before close animation
+            // completes) since ModalBar has already resized the editor and done its own scroll adjustment before
+            // this event fired - so anything we set here will override the pos that was (re)set by ModalBar.
             var editor = EditorManager.getCurrentFullEditor();
             if (this._origSelection) {
                 editor.setSelection(this._origSelection.start, this._origSelection.end);
@@ -427,7 +418,8 @@ define(function (require, exports, module) {
     /**
      * Handles changes to the current query in the search field.
      * @param {string} query The new query.
-     * @return {Array} The filtered list of results.
+     * @return {$.Promise|Array.<*>|{error:?string}} The filtered list of results, an error object, or a Promise that
+     *                                               yields one of those
      */
     QuickNavigateDialog.prototype._filterCallback = function (query) {
         // Re-evaluate which plugin is active each time query string changes

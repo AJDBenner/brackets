@@ -46,6 +46,8 @@ define(function (require, exports, module) {
      *     bar may remain visible and in the DOM while its closing animation is playing. However,
      *     by the time "close" is fired, the bar has been "popped out" of the layout and the
      *     editor scroll position has already been restored.
+     *     Second argument is the reason for closing (one of ModalBar.CLOSE_*).
+     *     Third argument is the Promise that close() will be returning.
      * 
      * @constructor
      *
