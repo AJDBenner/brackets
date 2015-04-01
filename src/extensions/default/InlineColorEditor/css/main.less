@@ -138,9 +138,17 @@
 }
 .color-editor section .color-selection-field .saturation-gradient {
     background-image: -webkit-gradient(linear, 0% 50%, 100% 50%, from(#fff), to(rgba(255,255,255,0)));
+    background-image: -moz-linear-gradient(left, #FFFFFF 0%, rgba(255,255,255,0) 100%);
+    background-image: -o-linear-gradient(left, #FFFFFF 0%, rgba(255,255,255,0) 100%);
+    background-image: -ms-linear-gradient(left, #FFFFFF 0%, rgba(255,255,255,0) 100%);
+    background-image: linear-gradient(left, #FFFFFF 0%, rgba(255,255,255,0) 100%);
 }
 .color-editor section .color-selection-field .luminosity-gradient {
     background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(transparent), to(#000));
+    background-image: -moz-linear-gradient(bottom, #000000 0%, rgba(255,255,255,0) 100%);
+    background-image: -o-linear-gradient(bottom, #000000 0%, rgba(255,255,255,0) 100%);
+    background-image: -ms-linear-gradient(bottom, #000000 0%, rgba(255,255,255,0) 100%);
+    background-image: linear-gradient(bottom, #000000 0%, rgba(255,255,255,0) 100%);
 }
 .color-editor section .color-selection-field .selector-base {
     width: 12px;
@@ -203,6 +211,10 @@
 }
 .color-editor section .hue-slider {
     background-image: -webkit-linear-gradient(top, #f00, #f0f, #00f, #0ff, #0f0, #ff0, #f00);
+    background-image: -moz-linear-gradient(top, #f00, #f0f, #00f, #0ff, #0f0, #ff0, #f00);
+    background-image: -o-linear-gradient(top, #f00, #f0f, #00f, #0ff, #0f0, #ff0, #f00);
+    background-image: -ms-linear-gradient(top, #f00, #f0f, #00f, #0ff, #0f0, #ff0, #f00);
+    background-image: linear-gradient(top, #f00, #f0f, #00f, #0ff, #0f0, #ff0, #f00);
 }
 .color-editor section footer {
     font-size: 100%;
