@@ -170,7 +170,7 @@ define(function (require, exports, module) {
         this.$hueBase.css("background-color", hueColor);
         
         // Update gradients in color square & opacity slider
-        // this.$selectionBase.css("background-color", colorObject.toHexString());
+        this.$selectionBase.css("background-color", colorObject.toHexString());
         // this.$opacityGradient.css("background-image", "-moz-linear-gradient(top, " + hueColor + " 0%, rgba(0,0,0,0) 100%)");
         // this.$opacityGradient.css("background-image", "-webkit-gradient(linear, top, bottom, color-stop(0%, " + hueColor + "), color-stop(100%,rgba(0,0,0,0)))");
         // this.$opacityGradient.css("background-image", "-webkit-linear-gradient(top, " + hueColor + " 0%, rgba(0,0,0,0) 100%)");

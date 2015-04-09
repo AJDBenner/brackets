@@ -162,7 +162,8 @@ module.exports = function (grunt) {
                     "src/styles/brackets.min.css": "src/styles/brackets.less"
                 },
                 options: {
-                    compress: true
+                    compress: true,
+                    plugins: [new (require('less-plugin-autoprefix'))({browsers: ["Explorer >= 10, Firefox >= 26, Chrome >= 31, Safari >= 7, Opera >= 19, iOS >= 3.2, Android >= 2.1"]})]
                 }
             }
         },
